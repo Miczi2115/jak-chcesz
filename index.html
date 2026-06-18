@@ -1,0 +1,864 @@
+cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC Builder · SWI-Prolog WASM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #07090f;  --bg2:   #0d1018;  --bg3:   #131820;
+  --b1:    #1e2535;  --b2:    #2a3548;
+  --acc:   #00e591;  --adim:  rgba(0,229,145,.12);
+  --ibl:   #4d9bff;  --idim:  rgba(77,155,255,.12);
+  --amd:   #ed3a3a;  --adm:   rgba(237,58,58,.12);
+  --tx:    #d0daf0;  --tx2:   #8899bb;  --muted: #4a5878;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+  --r: 8px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--tx); font-family: var(--sans); line-height: 1.6; }
+
+/* HEADER */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(7,9,15,.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--b1);
+  padding: 0 max(1.5rem,5vw); height: 52px;
+  display: flex; align-items: center; gap: 1rem;
+}
+.logo-tag {
+  font-family: var(--mono); font-size: .68rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  background: var(--acc); color: #000; padding: 3px 9px;
+  clip-path: polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);
+}
+.hdr-title { font-family: var(--mono); font-size: .85rem; font-weight: 600; }
+.hdr-right { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
+.sdot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+  transition: background .3s;
+}
+.sdot.loading { background: #ffa500; animation: pdot 1s infinite; }
+.sdot.ready   { background: var(--acc); animation: pdot 2.5s infinite; }
+.sdot.error   { background: var(--amd); }
+@keyframes pdot { 0%,100%{opacity:1} 50%{opacity:.3} }
+.slabel { font-family: var(--mono); font-size: .68rem; color: var(--tx2); }
+
+/* HERO */
+.hero {
+  position: relative; overflow: hidden;
+  padding: max(4rem,8vh) max(1.5rem,5vw) 3rem;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(0,229,145,.13) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  pointer-events: none;
+}
+.eyebrow {
+  font-family: var(--mono); font-size: .72rem; color: var(--acc);
+  letter-spacing: .12em; text-transform: uppercase; margin-bottom: 1rem; opacity: .8;
+}
+.hero h1 {
+  font-size: clamp(2rem,6vw,3.5rem); font-weight: 700;
+  letter-spacing: -.025em; line-height: 1.05; margin-bottom: 1.2rem;
+}
+.hero h1 em { font-style: normal; color: var(--acc); }
+.hero-desc {
+  font-size: 1rem; color: var(--tx2); max-width: 480px;
+  line-height: 1.75; margin-bottom: 2rem;
+}
+.hero-stats { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+.hstat { display: flex; flex-direction: column; gap: .15rem; }
+.hstat-n {
+  font-family: var(--mono); font-size: 1.5rem; font-weight: 700;
+  color: var(--acc); line-height: 1;
+}
+.hstat-l {
+  font-size: .7rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+
+/* CONTENT */
+.content { max-width: 900px; margin: 0 auto; padding: 0 max(1.5rem,5vw) 5rem; }
+
+/* SECTION LABEL */
+.slbl {
+  font-family: var(--mono); font-size: .65rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
+  display: flex; align-items: center; gap: .75rem;
+}
+.slbl::before { content: '//'; color: var(--acc); }
+
+/* CONTROLS */
+.ctrl-card {
+  background: var(--bg2); border: 1px solid var(--b1);
+  border-radius: var(--r); padding: 1.5rem; margin-bottom: 1.5rem;
+}
+.ctrl-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.2rem 2.5rem; margin-bottom: 1.4rem;
+}
+@media(max-width:560px){ .ctrl-grid { grid-template-columns: 1fr; } }
+.cgrp { display: flex; flex-direction: column; gap: .5rem; }
+.clbl {
+  font-family: var(--mono); font-size: .65rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+}
+
+/* SLIDER */
+.budget-row { display: flex; align-items: center; gap: .75rem; }
+input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 4px; border-radius: 2px; background: var(--b2); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--acc);
+  border: 2px solid var(--bg2); transition: transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+.bval {
+  font-family: var(--mono); font-size: .85rem; font-weight: 700;
+  color: var(--acc); min-width: 5.5rem; text-align: right;
+}
+
+/* CHIPS */
+.chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+.chip {
+  font-family: var(--mono); font-size: .72rem; font-weight: 600;
+  letter-spacing: .04em; padding: 5px 13px; border-radius: 20px;
+  border: 1px solid var(--b2); background: transparent; color: var(--tx2);
+  cursor: pointer; transition: all .15s;
+}
+.chip:hover { border-color: var(--acc); color: var(--acc); }
+.chip.active[data-brand="intel"] { background: var(--idim); border-color: var(--ibl); color: var(--ibl); }
+.chip.active[data-brand="amd"]   { background: var(--adm);  border-color: var(--amd); color: var(--amd); }
+.chip.active[data-brand="any"]   { background: var(--adim); border-color: var(--acc); color: var(--acc); }
+.chip.active[data-mode]          { background: var(--adim); border-color: var(--acc); color: var(--acc); }
+
+/* RUN BUTTON */
+.run-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: .6rem;
+  font-family: var(--mono); font-size: .8rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 11px 24px; border-radius: var(--r);
+  border: 1px solid var(--acc); background: var(--adim); color: var(--acc);
+  cursor: pointer; transition: all .2s;
+}
+.run-btn:hover:not(:disabled) { background: var(--acc); color: #000; }
+.run-btn:active:not(:disabled) { transform: scale(.98); }
+.run-btn:disabled { opacity: .35; cursor: not-allowed; }
+.spinner {
+  display: none; width: 14px; height: 14px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+.run-btn.running .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* RESULTS */
+.result-block { margin-bottom: 2rem; }
+.rbtitle {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--tx2);
+  margin-bottom: .9rem; display: flex; align-items: center; gap: .6rem;
+}
+.btag {
+  font-family: var(--mono); font-size: .6rem; padding: 1px 8px;
+  border-radius: 10px; font-weight: 600;
+}
+.btag.intel { background: var(--idim); color: var(--ibl); border: 1px solid var(--ibl); }
+.btag.amd   { background: var(--adm);  color: var(--amd); border: 1px solid var(--amd); }
+.btag.any   { background: var(--adim); color: var(--acc); border: 1px solid var(--acc); }
+
+.cmp-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+  gap: .55rem; margin-bottom: .75rem;
+}
+
+.ccard {
+  background: var(--bg3); border: 1px solid var(--b1);
+  border-left: 3px solid var(--b2); border-radius: var(--r);
+  padding: .8rem .9rem; display: flex; flex-direction: column; gap: .3rem;
+  animation: fadeUp .35s ease both; transition: border-left-color .2s, background .2s;
+}
+.ccard:hover { background: #161e2c; }
+.ccard[data-c="cpu"]:hover    { border-left-color: #ff9f43; }
+.ccard[data-c="gpu"]:hover    { border-left-color: #54a0ff; }
+.ccard[data-c="mobo"]:hover   { border-left-color: #ff6b81; }
+.ccard[data-c="ram"]:hover    { border-left-color: #feca57; }
+.ccard[data-c="ssd"]:hover    { border-left-color: #48dbfb; }
+.ccard[data-c="psu"]:hover    { border-left-color: #ff9ff3; }
+.ccard[data-c="case"]:hover   { border-left-color: #a29bfe; }
+.ccard[data-c="cooler"]:hover { border-left-color: #00cec9; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.clbl2 {
+  font-family: var(--mono); font-size: .58rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+}
+.cname { font-size: .78rem; font-weight: 600; color: var(--tx); line-height: 1.3; }
+.ctags { display: flex; gap: .35rem; margin-top: .2rem; flex-wrap: wrap; }
+.ctag {
+  font-family: var(--mono); font-size: .6rem; padding: 1px 6px;
+  border-radius: 20px; background: var(--bg); border: 1px solid var(--b1); color: var(--tx2);
+}
+.ctag.p { color: var(--acc); border-color: rgba(0,229,145,.25); }
+.ctag.w { color: #82aaff; border-color: rgba(130,170,255,.25); }
+
+/* SUMMARY BAR */
+.sbar {
+  background: var(--bg2); border: 1px solid var(--b1);
+  border-radius: var(--r); padding: 1rem 1.2rem;
+  display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center;
+}
+.sitem { display: flex; flex-direction: column; gap: .1rem; }
+.sitem-l {
+  font-family: var(--mono); font-size: .6rem;
+  text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+}
+.sitem-v { font-family: var(--mono); font-size: 1.1rem; font-weight: 700; color: var(--acc); }
+.sitem-v.bl { color: #82aaff; }
+.sitem-v.in { color: var(--ibl); }
+.sitem-v.am { color: var(--amd); }
+
+.divider { height: 1px; background: var(--b1); margin: 1.5rem 0; }
+
+/* EMPTY / ERROR */
+.empty {
+  text-align: center; padding: 3rem 1.5rem;
+  color: var(--muted); font-family: var(--mono); font-size: .8rem;
+  border: 1px dashed var(--b2); border-radius: var(--r);
+}
+.empty-icon { font-size: 2rem; margin-bottom: .75rem; }
+
+/* SOURCE */
+.src-toggle {
+  display: flex; align-items: center; gap: .5rem;
+  background: none; border: none; cursor: pointer; color: var(--tx2);
+  font-family: var(--mono); font-size: .72rem; padding: .5rem 0;
+}
+.src-toggle:hover { color: var(--acc); }
+.ti { transition: transform .2s; font-size: .6rem; }
+.ti.open { transform: rotate(90deg); }
+.src-body { display: none; margin-top: .75rem; }
+.src-body.open { display: block; }
+
+.panel {
+  background: var(--bg2); border: 1px solid var(--b1);
+  border-radius: var(--r); overflow: hidden;
+}
+.pbar {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .6rem 1rem; background: var(--bg3);
+  border-bottom: 1px solid var(--b1);
+}
+.wd { width: 8px; height: 8px; border-radius: 50%; }
+.wd.r { background: #ff5f56; } .wd.y { background: #ffbd2e; } .wd.g { background: #27c93f; }
+.pbar-name { font-family: var(--mono); font-size: .72rem; color: var(--tx2); margin-left: .25rem; }
+pre.code {
+  font-family: var(--mono); font-size: .7rem; line-height: 1.7;
+  padding: 1.2rem 1.4rem; overflow-x: auto; max-height: 520px; overflow-y: auto;
+  color: #a8b8d8;
+}
+pre.code::-webkit-scrollbar { width: 4px; height: 4px; }
+pre.code::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
+
+/* Prolog syntax colors */
+.cm  { color: #3a5068; font-style: italic; }
+.str { color: #a8cc7a; }
+.num { color: #f0a070; }
+.var { color: #f0cc70; }
+.pred{ color: #6699ff; }
+.op  { color: #88ddff; }
+.kw  { color: #cc88ff; }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--b1); padding: 1.5rem max(1.5rem,5vw);
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.ft { font-family: var(--mono); font-size: .68rem; color: var(--muted); }
+.ft a { color: var(--tx2); text-decoration: none; }
+.ft a:hover { color: var(--acc); }
+.ft-r { margin-left: auto; font-family: var(--mono); font-size: .65rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-tag">Prolog</div>
+  <span class="hdr-title">konfigurator.pl</span>
+  <div class="hdr-right">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="slabel" id="slabel">Ładowanie WASM…</span>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">// SWI-Prolog · WebAssembly · działa w przeglądarce bez serwera</div>
+  <h1>Konfigurator PC<br>napędzany <em>Prologiem</em></h1>
+  <p class="hero-desc">
+    Komponenty opisane jako fakty logiczne. Prolog sam przeszukuje przestrzeń rozwiązań —
+    podajesz budżet i markę, reguły wybierają optymalną konfigurację.
+  </p>
+  <div class="hero-stats">
+    <div class="hstat"><span class="hstat-n">48</span><span class="hstat-l">komponentów w bazie</span></div>
+    <div class="hstat"><span class="hstat-n">&gt;1.6M</span><span class="hstat-l">kombinacji do sprawdzenia</span></div>
+    <div class="hstat"><span class="hstat-n">WASM</span><span class="hstat-l">wykonuje się w przeglądarce</span></div>
+  </div>
+</section>
+
+<div class="content">
+
+  <div class="slbl" style="margin-top:.5rem">zapytanie</div>
+  <div class="ctrl-card">
+    <div class="ctrl-grid">
+      <div class="cgrp">
+        <div class="clbl">Budżet</div>
+        <div class="budget-row">
+          <input type="range" id="slider" min="1000" max="20000" step="100" value="3000">
+          <span class="bval" id="bval">3 000 zł</span>
+        </div>
+      </div>
+      <div class="cgrp">
+        <div class="clbl">Marka CPU</div>
+        <div class="chips">
+          <button class="chip active" data-brand="intel">Intel</button>
+          <button class="chip" data-brand="amd">AMD</button>
+          <button class="chip" data-brand="any">Dowolna</button>
+        </div>
+      </div>
+      <div class="cgrp">
+        <div class="clbl">Tryb</div>
+        <div class="chips">
+          <button class="chip active" data-mode="cheapest">Najtańszy</button>
+          <button class="chip" data-mode="expensive">Najdroższy</button>
+          <button class="chip" data-mode="both">Oba</button>
+        </div>
+      </div>
+    </div>
+    <button class="run-btn" id="runBtn" disabled>
+      <div class="spinner"></div>
+      <span id="btnTxt">Uruchom zapytanie Prolog</span>
+    </button>
+  </div>
+
+  <div class="slbl">wynik</div>
+  <div id="results">
+    <div class="empty">
+      <div class="empty-icon">⚙️</div>
+      Ładowanie silnika SWI-Prolog WASM…
+    </div>
+  </div>
+
+  <div style="margin-top:2rem">
+    <div class="slbl">kod źródłowy</div>
+    <button class="src-toggle" onclick="toggleSrc(this)">
+      <span class="ti" id="ti">▶</span>
+      <span id="stxt">konfigurator.pl — pokaż kod</span>
+    </button>
+    <div class="src-body" id="srcBody">
+      <div class="panel">
+        <div class="pbar">
+          <div class="wd r"></div><div class="wd y"></div><div class="wd g"></div>
+          <span class="pbar-name">konfigurator.pl</span>
+        </div>
+        <pre class="code" id="codeEl"></pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span class="ft">
+    zbudowane z <a href="https://www.swi-prolog.org/" target="_blank" rel="noopener">SWI-Prolog</a>
+    + <a href="https://github.com/SWI-Prolog/npm-swipl-wasm" target="_blank" rel="noopener">swipl-wasm</a>
+  </span>
+  <span class="ft-r">hosted on GitHub Pages</span>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// PROLOG KNOWLEDGE BASE (embedded)
+// ─────────────────────────────────────────────
+const KB = `% ============================================================
+%  FAKTY - komponenty PC
+% ============================================================
+
+% cpu(ID, Nazwa, Cena, Socket, TypRAM, TDP)
+cpu(cpu1, 'Intel Core i3-12100F', 320, lga1700, ddr4, 65).
+cpu(cpu2, 'AMD Ryzen 5 5600',     530, am4,    ddr4, 65).
+cpu(cpu3, 'Intel Core i5-12400F', 490, lga1700, ddr4, 65).
+cpu(cpu4, 'AMD Ryzen 5 7500F',    780, am5,    ddr5, 75).
+cpu(cpu5, 'Intel Core i5-14600K',1390, lga1700, ddr5,150).
+cpu(cpu6, 'AMD Ryzen 7 7800X3D', 1750, am5,    ddr5, 85).
+
+% gpu(ID, Nazwa, Cena, MocGPU)
+gpu(gpu1, 'ASUS Radeon RX 6500 XT Dual 4GB',         670, 110).
+gpu(gpu2, 'MSI Radeon RX 6600 Mech 2X 8GB',          990, 130).
+gpu(gpu3, 'Gigabyte GeForce RTX 4060 Windforce 8GB', 1320, 115).
+gpu(gpu4, 'Sapphire Radeon RX 7700 XT Pulse 12GB',  1950, 245).
+gpu(gpu5, 'ASUS GeForce RTX 4070 Super Dual 12GB',  2790, 220).
+gpu(gpu6, 'MSI GeForce RTX 4090 Gaming X Slim 24GB',8600, 450).
+
+% mobo(ID, Nazwa, Cena, Socket, TypRAM)
+mobo(mobo1, 'Gigabyte B450M K',          260, am4,    ddr4).
+mobo(mobo2, 'Gigabyte H610M K DDR4',     285, lga1700, ddr4).
+mobo(mobo3, 'MSI PRO B550M-A WIFI',      450, am4,    ddr4).
+mobo(mobo4, 'ASRock B760M Pro RS',       530, lga1700, ddr5).
+mobo(mobo5, 'MSI PRO B650M-P',           550, am5,    ddr5).
+mobo(mobo6, 'MSI MAG B650 TOMAHAWK WIFI',890, am5,    ddr5).
+
+% ram(ID, Nazwa, Cena, TypRAM)
+ram(ram1, 'GoodRam IRDM DDR4 16GB (2x8GB) 3200MHz',    160, ddr4).
+ram(ram2, 'Lexar Thor DDR4 16GB (2x8GB) 3200MHz',       170, ddr4).
+ram(ram3, 'G.Skill Aegis DDR4 32GB (2x16GB) 3200MHz',   290, ddr4).
+ram(ram4, 'Kingston FURY Beast DDR5 16GB (2x8GB) 5600MHz',310, ddr5).
+ram(ram5, 'Corsair Vengeance DDR5 32GB (2x16GB) 6000MHz',490, ddr5).
+ram(ram6, 'G.Skill Trident Z5 RGB DDR5 64GB (2x32GB) 6000MHz',1120,ddr5).
+
+% ssd(ID, Nazwa, Cena)
+ssd(ssd1, 'Kingston NV2 500GB M.2 PCIe',   175).
+ssd(ssd2, 'Lexar NM620 1TB M.2 PCIe',      280).
+ssd(ssd3, 'Lexar NM790 1TB M.2 PCIe',      360).
+ssd(ssd4, 'Kingston KC3000 1TB M.2 PCIe',  410).
+ssd(ssd5, 'Lexar NM790 2TB M.2 PCIe',      590).
+ssd(ssd6, 'Samsung 990 Pro 2TB M.2 PCIe',  790).
+
+% psu(ID, Nazwa, Cena, Moc)
+psu(psu1, 'MSI MAG A550BN Bronze',          230, 550).
+psu(psu2, 'Endorfy Vero L5 Bronze',         275, 600).
+psu(psu3, 'be quiet! System Power 10',      320, 650).
+psu(psu4, 'be quiet! Pure Power 12 M Gold', 540, 750).
+psu(psu5, 'Seasonic Focus GX Gold ATX 3.0', 670, 850).
+psu(psu6, 'MSI MPG A1000G Gold PCIE5',      890,1000).
+
+% case(ID, Nazwa, Cena)
+case(case1, 'Logic Portos ARGB Mini',       199).
+case(case2, 'Endorfy Ventum 200 Air',       240).
+case(case3, 'Endorfy Signum 300 ARGB',      395).
+case(case4, 'be quiet! Pure Base 500DX',    560).
+case(case5, 'Lian Li O11 Dynamic EVO RGB',  840).
+case(case6, 'Fractal Design Torrent',      1090).
+
+% cooler(ID, Nazwa, Cena)
+cooler(cool1, 'Chlodzenie fabryczne (BOX)',          0).
+cooler(cool2, 'Endorfy Spartan 5 MAX',             100).
+cooler(cool3, 'Endorfy Fera 5',                    150).
+cooler(cool4, 'Thermalright Peerless Assassin 120 SE',195).
+cooler(cool5, 'Arctic Liquid Freezer III 360',     420).
+cooler(cool6, 'ASUS ROG Ryujin III 360 ARGB',     1650).
+
+% ============================================================
+%  Przynaleznosc do marki
+% ============================================================
+cpu_brand(cpu1, intel).
+cpu_brand(cpu2, amd).
+cpu_brand(cpu3, intel).
+cpu_brand(cpu4, amd).
+cpu_brand(cpu5, intel).
+cpu_brand(cpu6, amd).
+
+% ============================================================
+%  RDZEN: budowanie konfiguracji z ograniczeniami
+% ============================================================
+build(Budget, Brand, build(Total,
+        cpu(CPUName,CPUCost,CPUPow),
+        gpu(GPUName,GPUCost,GPUPow),
+        mobo(MOBOName,MOBOCost),
+        ram(RAMName,RAMCost),
+        ssd(SSDName,SSDCost),
+        psu(PSUName,PSUCost,PSUPow),
+        case(CaseName,CaseCost),
+        cooler(CoolName,CoolCost))) :-
+    cpu(CPUID, CPUName, CPUCost, Socket, RamType, CPUPow),
+    ( Brand = any -> true ; cpu_brand(CPUID, Brand) ),
+    CPUCost =< Budget,  R1 is Budget - CPUCost,
+    gpu(_, GPUName, GPUCost, GPUPow),
+    GPUCost =< R1,      R2 is R1 - GPUCost,
+    mobo(_, MOBOName, MOBOCost, Socket, RamType),
+    MOBOCost =< R2,     R3 is R2 - MOBOCost,
+    ram(_, RAMName, RAMCost, RamType),
+    RAMCost =< R3,      R4 is R3 - RAMCost,
+    ssd(_, SSDName, SSDCost),
+    SSDCost =< R4,      R5 is R4 - SSDCost,
+    MinPSU is ceiling((CPUPow + GPUPow + 50) * 1.2),
+    psu(_, PSUName, PSUCost, PSUPow),
+    PSUPow >= MinPSU,
+    PSUCost =< R5,      R6 is R5 - PSUCost,
+    case(_, CaseName, CaseCost),
+    CaseCost =< R6,     R7 is R6 - CaseCost,
+    cooler(_, CoolName, CoolCost),
+    CoolCost =< R7,
+    Total is CPUCost + GPUCost + MOBOCost + RAMCost +
+             SSDCost + PSUCost + CaseCost + CoolCost.
+
+% ============================================================
+%  HELPERS
+% ============================================================
+cheapest_build(Budget, Brand, Build) :-
+    findall(Total-B,
+            (build(Budget, Brand, B), B = build(Total,_,_,_,_,_,_,_,_)),
+            All),
+    All \\= [],
+    msort(All, [_-Build|_]).
+
+most_expensive_build(Brand, Build) :-
+    findall(Total-B,
+            (build(999999, Brand, B), B = build(Total,_,_,_,_,_,_,_,_)),
+            All),
+    All \\= [],
+    msort(All, Sorted),
+    last(Sorted, _-Build).
+
+% ============================================================
+%  WYSWIETLANIE
+% ============================================================
+print_build(build(Total,
+        cpu(CPUName,CPUCost,CPUPow),
+        gpu(GPUName,GPUCost,GPUPow),
+        mobo(MOBOName,MOBOCost),
+        ram(RAMName,RAMCost),
+        ssd(SSDName,SSDCost),
+        psu(PSUName,PSUCost,PSUPow),
+        case(CaseName,CaseCost),
+        cooler(CoolName,CoolCost))) :-
+    TotalPow is CPUPow + GPUPow + 50,
+    Headroom  is PSUPow - TotalPow,
+    format("CPU:     ~w (~w zl) [~wW]~n", [CPUName,  CPUCost,  CPUPow]),
+    format("MOBO:    ~w (~w zl)~n",        [MOBOName, MOBOCost]),
+    format("RAM:     ~w (~w zl)~n",        [RAMName,  RAMCost]),
+    format("GPU:     ~w (~w zl) [~wW]~n",  [GPUName,  GPUCost,  GPUPow]),
+    format("SSD:     ~w (~w zl)~n",        [SSDName,  SSDCost]),
+    format("PSU:     ~w (~w zl) [~wW]~n",  [PSUName,  PSUCost,  PSUPow]),
+    format("Case:    ~w (~w zl)~n",        [CaseName, CaseCost]),
+    format("Cooler:  ~w (~w zl)~n",        [CoolName, CoolCost]),
+    format("Pobor mocy:      ~wW~n",        [TotalPow]),
+    format("Zapas zasilacza: ~wW~n",        [Headroom]),
+    format("RAZEM:   ~w zl~n",             [Total]).
+
+main :-
+    Budget = 3000,
+    format("=== NAJTANSZY INTEL (budzet: ~w zl) ===~n", [Budget]),
+    ( cheapest_build(Budget, intel, IB) -> print_build(IB)
+    ; write('Brak buildu Intel!'), nl ),
+    nl,
+    write('=== NAJDROZSZY AMD (bez limitu) ==='), nl,
+    ( most_expensive_build(amd, AB) -> print_build(AB)
+    ; write('Brak buildu AMD!'), nl ).
+
+:- initialization(main).`;
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let engine = null;
+let ready  = false;
+
+// ─────────────────────────────────────────────
+// STATUS
+// ─────────────────────────────────────────────
+function setStatus(state, text) {
+  document.getElementById('sdot').className   = 'sdot ' + state;
+  document.getElementById('slabel').textContent = text;
+}
+
+// ─────────────────────────────────────────────
+// WASM INIT
+// ─────────────────────────────────────────────
+async function initEngine() {
+  try {
+    setStatus('loading', 'Pobieranie WASM…');
+    const { SWIPL } = await import(
+      'https://SWI-Prolog.github.io/npm-swipl-wasm/3/3/0/dynamic-import.js'
+    );
+
+    setStatus('loading', 'Inicjalizacja silnika…');
+    engine = await SWIPL({ arguments: ['-q'] });
+
+    setStatus('loading', 'Ładowanie bazy wiedzy…');
+    const kb = KB.replace(/:- initialization\(main\)\./, '% autoload wylaczone');
+    engine.FS.writeFile('/tmp/kb.pl', kb);
+    const ok = engine.prolog.query("consult('/tmp/kb.pl')").once();
+    if (!ok) throw new Error('consult failed');
+
+    ready = true;
+    setStatus('ready', 'Silnik gotowy — wyniki obliczone przez Prolog');
+    document.getElementById('runBtn').disabled = false;
+    runQuery(); // auto-run defaults
+
+  } catch (err) {
+    console.error('WASM error:', err);
+    setStatus('error', 'Błąd WASM — wyniki statyczne');
+    fallback();
+  }
+}
+
+// ─────────────────────────────────────────────
+// QUERY
+// ─────────────────────────────────────────────
+const PAT = 'build(Tot,cpu(CN,CC,CP),gpu(GN,GC,GP),mobo(MN,MC),ram(RN,RC),ssd(SN,SC),psu(PN,PC,PP),case(KN,KC),cooler(CON,COC))';
+
+function parseSol(sol) {
+  if (!sol || sol === false) return null;
+  return {
+    total:     sol.Tot,
+    powerDraw: sol.CP + sol.GP + 50,
+    headroom:  sol.PP - (sol.CP + sol.GP + 50),
+    comps: [
+      { key:'cpu',    lbl:'CPU',          nm:sol.CN,  cost:sol.CC, pw:sol.CP },
+      { key:'mobo',   lbl:'Płyta główna', nm:sol.MN,  cost:sol.MC            },
+      { key:'ram',    lbl:'RAM',          nm:sol.RN,  cost:sol.RC            },
+      { key:'gpu',    lbl:'GPU',          nm:sol.GN,  cost:sol.GC, pw:sol.GP },
+      { key:'ssd',    lbl:'SSD',          nm:sol.SN,  cost:sol.SC            },
+      { key:'psu',    lbl:'Zasilacz',     nm:sol.PN,  cost:sol.PC, pw:sol.PP },
+      { key:'case',   lbl:'Obudowa',      nm:sol.KN,  cost:sol.KC            },
+      { key:'cooler', lbl:'Chłodzenie',   nm:sol.CON, cost:sol.COC           },
+    ]
+  };
+}
+
+function runQuery() {
+  if (!engine) return;
+  const budget = parseInt(document.getElementById('slider').value);
+  const brand  = document.querySelector('.chip.active[data-brand]').dataset.brand;
+  const mode   = document.querySelector('.chip.active[data-mode]').dataset.mode;
+
+  const btn = document.getElementById('runBtn');
+  btn.classList.add('running'); btn.disabled = true;
+
+  setTimeout(() => {
+    try {
+      const out = {};
+      if (mode === 'cheapest' || mode === 'both') {
+        const sol = engine.prolog.query(`cheapest_build(${budget},${brand},${PAT})`).once();
+        out.cheapest = parseSol(sol);
+      }
+      if (mode === 'expensive' || mode === 'both') {
+        const sol = engine.prolog.query(`most_expensive_build(${brand},${PAT})`).once();
+        out.expensive = parseSol(sol);
+      }
+      render(out, mode, budget, brand);
+    } catch(e) {
+      console.error(e);
+      document.getElementById('results').innerHTML =
+        `<div class="empty"><div class="empty-icon">⚠️</div>${e.message}</div>`;
+    } finally {
+      btn.classList.remove('running'); btn.disabled = false;
+    }
+  }, 10);
+}
+
+// ─────────────────────────────────────────────
+// RENDERING
+// ─────────────────────────────────────────────
+function fmt(n) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+}
+
+function card(comp, delay) {
+  const pw = comp.pw != null
+    ? `<span class="ctag w">${comp.pw} W</span>` : '';
+  return `<div class="ccard" data-c="${comp.key}" style="animation-delay:${delay}ms">
+    <div class="clbl2">${comp.lbl}</div>
+    <div class="cname">${comp.nm}</div>
+    <div class="ctags"><span class="ctag p">${fmt(comp.cost)} zł</span>${pw}</div>
+  </div>`;
+}
+
+function sbar(b, brand) {
+  const vc = brand === 'intel' ? 'in' : brand === 'amd' ? 'am' : '';
+  return `<div class="sbar">
+    <div class="sitem">
+      <div class="sitem-l">Łączny koszt</div>
+      <div class="sitem-v ${vc}">${fmt(b.total)} zł</div>
+    </div>
+    <div class="sitem">
+      <div class="sitem-l">Pobór mocy</div>
+      <div class="sitem-v bl">${b.powerDraw} W</div>
+    </div>
+    <div class="sitem">
+      <div class="sitem-l">Zapas zasilacza</div>
+      <div class="sitem-v bl">${b.headroom} W</div>
+    </div>
+  </div>`;
+}
+
+function block(b, title, brand) {
+  if (!b) return `<div class="result-block"><div class="empty">
+    <div class="empty-icon">🔍</div>Brak konfiguracji dla podanych kryteriów</div></div>`;
+  const cards = b.comps.map((c,i) => card(c, i*45)).join('');
+  return `<div class="result-block">
+    <div class="rbtitle"><span class="btag ${brand}">${brand.toUpperCase()}</span>${title}</div>
+    <div class="cmp-grid">${cards}</div>
+    ${sbar(b, brand)}
+  </div>`;
+}
+
+function render(out, mode, budget, brand) {
+  let html = '';
+  if (mode === 'cheapest' || mode === 'both')
+    html += block(out.cheapest, `najtańszy · budżet ${fmt(budget)} zł`, brand);
+  if (mode === 'both')
+    html += '<div class="divider"></div>';
+  if (mode === 'expensive' || mode === 'both')
+    html += block(out.expensive, 'najdroższy · bez limitu budżetu', brand);
+  document.getElementById('results').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// FALLBACK (pre-computed results)
+// ─────────────────────────────────────────────
+function fallback() {
+  const cheap = {
+    total:2039, powerDraw:225, headroom:325,
+    comps:[
+      {key:'cpu',    lbl:'CPU',          nm:'Intel Core i3-12100F',             cost:320,  pw:65  },
+      {key:'mobo',   lbl:'Płyta główna', nm:'Gigabyte H610M K DDR4',             cost:285         },
+      {key:'ram',    lbl:'RAM',          nm:'GoodRam IRDM DDR4 16GB 3200MHz',    cost:160         },
+      {key:'gpu',    lbl:'GPU',          nm:'ASUS Radeon RX 6500 XT Dual 4GB',  cost:670,  pw:110 },
+      {key:'ssd',    lbl:'SSD',          nm:'Kingston NV2 500GB M.2 PCIe',       cost:175         },
+      {key:'psu',    lbl:'Zasilacz',     nm:'MSI MAG A550BN Bronze',             cost:230,  pw:550 },
+      {key:'case',   lbl:'Obudowa',      nm:'Logic Portos ARGB Mini',            cost:199         },
+      {key:'cooler', lbl:'Chłodzenie',   nm:'Chłodzenie fabryczne (BOX)',         cost:0           },
+    ]
+  };
+  const exp = {
+    total:16780, powerDraw:585, headroom:415,
+    comps:[
+      {key:'cpu',    lbl:'CPU',          nm:'AMD Ryzen 7 7800X3D',                     cost:1750, pw:85  },
+      {key:'mobo',   lbl:'Płyta główna', nm:'MSI MAG B650 TOMAHAWK WIFI',               cost:890        },
+      {key:'ram',    lbl:'RAM',          nm:'G.Skill Trident Z5 RGB DDR5 64GB 6000MHz',  cost:1120       },
+      {key:'gpu',    lbl:'GPU',          nm:'MSI GeForce RTX 4090 Gaming X Slim 24GB',  cost:8600, pw:450},
+      {key:'ssd',    lbl:'SSD',          nm:'Samsung 990 Pro 2TB M.2 PCIe',              cost:790        },
+      {key:'psu',    lbl:'Zasilacz',     nm:'MSI MPG A1000G Gold PCIE5',                 cost:890,  pw:1000},
+      {key:'case',   lbl:'Obudowa',      nm:'Fractal Design Torrent',                    cost:1090       },
+      {key:'cooler', lbl:'Chłodzenie',   nm:'ASUS ROG Ryujin III 360 ARGB',              cost:1650       },
+    ]
+  };
+  const el = document.getElementById('results');
+  el.innerHTML = block(cheap, 'najtańszy · budżet 3 000 zł', 'intel')
+    + '<div class="divider"></div>'
+    + block(exp,   'najdroższy · bez limitu budżetu', 'amd');
+  document.getElementById('runBtn').disabled = false;
+}
+
+// ─────────────────────────────────────────────
+// SYNTAX HIGHLIGHTING
+// ─────────────────────────────────────────────
+function hlProlog(src) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return src.split('\n').map(line => {
+    // Find comment position (ignore inside quotes)
+    let inQ = false, cmAt = -1;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === "'") inQ = !inQ;
+      if (!inQ && line[i] === '%') { cmAt = i; break; }
+    }
+    const code = cmAt >= 0 ? line.slice(0, cmAt) : line;
+    const cm   = cmAt >= 0 ? line.slice(cmAt)    : '';
+
+    let out = '', i = 0;
+    while (i < code.length) {
+      // Quoted atom
+      if (code[i] === "'") {
+        let j = i + 1;
+        while (j < code.length && code[j] !== "'") j++;
+        out += `<span class="str">${esc(code.slice(i, j+1))}</span>`;
+        i = j + 1; continue;
+      }
+      // Operators
+      const ops = [':-', '->', '\\=', '=<', '>=', '\\+', 'is', 'mod'];
+      let matched = false;
+      for (const op of ops) {
+        if (code.startsWith(op, i) && (i === 0 || /\W/.test(code[i-1]))) {
+          const after = code[i + op.length];
+          if (!after || /\W/.test(after)) {
+            out += `<span class="op">${esc(op)}</span>`;
+            i += op.length; matched = true; break;
+          }
+        }
+      }
+      if (matched) continue;
+      // Number
+      if (/\d/.test(code[i]) && (i === 0 || /\W/.test(code[i-1]))) {
+        let j = i;
+        while (j < code.length && /[\d.]/.test(code[j])) j++;
+        out += `<span class="num">${code.slice(i,j)}</span>`;
+        i = j; continue;
+      }
+      // Word
+      if (/[a-zA-Z_]/.test(code[i])) {
+        let j = i;
+        while (j < code.length && /[a-zA-Z0-9_]/.test(code[j])) j++;
+        const w = code.slice(i, j);
+        const kws = ['true','fail','nl','write','format','findall','msort','last','assert','consult'];
+        if (/[A-Z_]/.test(w[0])) out += `<span class="var">${w}</span>`;
+        else if (kws.includes(w))  out += `<span class="kw">${w}</span>`;
+        else if (code[j] === '(')  out += `<span class="pred">${w}</span>`;
+        else out += esc(w);
+        i = j; continue;
+      }
+      out += esc(code[i]); i++;
+    }
+    return out + (cm ? `<span class="cm">${esc(cm)}</span>` : '');
+  }).join('\n');
+}
+
+// ─────────────────────────────────────────────
+// UI EVENTS
+// ─────────────────────────────────────────────
+document.getElementById('slider').addEventListener('input', function() {
+  document.getElementById('bval').textContent = fmt(parseInt(this.value)) + ' zł';
+});
+
+document.querySelectorAll('.chip[data-brand]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chip[data-brand]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  })
+);
+
+document.querySelectorAll('.chip[data-mode]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chip[data-mode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  })
+);
+
+document.getElementById('runBtn').addEventListener('click', runQuery);
+
+function toggleSrc(btn) {
+  const body = document.getElementById('srcBody');
+  const ti   = document.getElementById('ti');
+  body.classList.toggle('open');
+  ti.classList.toggle('open');
+  document.getElementById('stxt').textContent = body.classList.contains('open')
+    ? 'konfigurator.pl — ukryj kod'
+    : 'konfigurator.pl — pokaż kod';
+  if (body.classList.contains('open') && !document.getElementById('codeEl').innerHTML)
+    document.getElementById('codeEl').innerHTML = hlProlog(KB);
+}
+
+// ─────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────
+initEngine();
+</script>
+</body>
+</html>
+HTMLEOF
+echo "Done. Size: $(wc -c < /mnt/user-data/outputs/index.html) bytes"
+
